@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>دعوة وحضور</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Roboto, "Noto Naskh Arabic", Arial;
+        background: #f3f4f6;
+        margin: 0;
+        padding: 40px;
+        text-align: center;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 28px;
+        max-width: 360px;
+        margin: auto;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+      }
+      .buttons {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        margin-top: 18px;
+      }
+      .btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 16px;
+      }
+      .confirm {
+        background: #2f855a;
+      }
+      .decline {
+        background: #d9534f;
+      }
+      #qrcode-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+        margin-top: 20px;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body>
+    <div class="card" id="inviteCard">
+      <h2>مرحباً <span id="guestSpan">ضيفنا الكريم</span></h2>
+      <p>نتشرف بدعوتكم لحضور حفل زفاف (اسم العريس) و (اسم العروس)</p>
+      <p>🕗 الوقت: 8 PM</p>
+      <p>📅 اليوم: الجمعة</p>
+      <p>📍 المكان: فندق ريجنسي</p>
+      <p>عدد الدعوات: <span id="countSpan">1</span></p>
+
+      <div class="buttons">
+        <a id="confirmBtn" class="btn confirm" href="javascript:void(0)"
+          >تأكيد</a
+        >
+        <a id="declineBtn" class="btn decline" href="javascript:void(0)"
+          >اعتذار</a
+        >
+      </div>
+    </div>
+
+    <div id="barcodeSection" style="display: none">
+      <h2 id="msg"></h2>
+      <div id="qrcode-container"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        const guestParam =
+          new URLSearchParams(window.location.search).get("guest") || "";
+
+        const webAppUrl =
+          "https://script.google.com/macros/s/AKfycbw94t0im5wYfef_dobJtT0fr0aUUbXi6RtdXTlu8bKg2XDkIZYLqBxqiESjcsKWzeql/exec";
+
+        let guestName = guestParam || "ضيفنا الكريم";
+        let guestCount = 1;
+
+        // جلب البيانات من الشيت
+        try {
+          const res = await fetch(
+            webAppUrl + "?guest=" + encodeURIComponent(guestParam)
+          );
+          const json = await res.json();
+          guestName = json.guest;
+          guestCount = Number(json.count) || 1; // العدد من الشيت
+        } catch (err) {
+          console.warn(
+            "لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي",
+            err
+          );
+        }
+
+        document.getElementById("guestSpan").textContent = guestName;
+        document.getElementById("countSpan").textContent = guestCount;
+
+        const inviteCard = document.getElementById("inviteCard");
+        const barcodeSection = document.getElementById("barcodeSection");
+        const msg = document.getElementById("msg");
+        const container = document.getElementById("qrcode-container");
+
+        function updateStatus(guest, status) {
+          fetch(
+            webAppUrl + `?guest=${encodeURIComponent(guest)}&status=${status}`,
+            { method: "POST" }
+          ).catch((err) => console.error(err));
+        }
+
+        // زر تأكيد الحضور
+        document.getElementById("confirmBtn").onclick = function () {
+          updateStatus(guestName, "confirmed");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "تم تأكيد حضورك 🎉";
+
+          container.innerHTML = "";
+          for (let i = 1; i <= guestCount; i++) {
+            const div = document.createElement("div");
+            container.appendChild(div);
+            new QRCode(div, {
+              text: guestName + "-" + i,
+              width: 230,
+              height: 230,
+            });
+          }
+        };
+
+        // زر الاعتذار
+        document.getElementById("declineBtn").onclick = function () {
+          updateStatus(guestName, "declined");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "نأسف لعدم تمكنك من الحضور 🌸";
+          container.innerHTML = ""; // لا باركود
+        };
+      });
+    </script>
+  </body>
+</html>
