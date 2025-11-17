@@ -47,17 +47,21 @@
         align-items: center;
         margin-top: 20px;
       }
+      #qrcode-container > div {
+        width: 230px;
+        height: 230px;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body>
     <div class="card" id="inviteCard">
-      <h2>مرحباً <span id="guestSpan">ضيفنا الكريم</span></h2>
+      <h2>مرحباً <span id="guestSpan"></span></h2>
       <p>نتشرف بدعوتكم لحضور حفل زفاف (اسم العريس) و (اسم العروس)</p>
       <p>🕗 الوقت: 8 PM</p>
       <p>📅 اليوم: الجمعة</p>
       <p>📍 المكان: فندق ريجنسي</p>
-      <p>عدد الدعوات: <span id="countSpan">1</span></p>
+      <p>عدد الدعوات: <span id="countSpan">-</span></p>
 
       <div class="buttons">
         <a id="confirmBtn" class="btn confirm" href="javascript:void(0)"
@@ -78,21 +82,19 @@
       document.addEventListener("DOMContentLoaded", async function () {
         const guestParam =
           new URLSearchParams(window.location.search).get("guest") || "";
-
         const webAppUrl =
           "https://script.google.com/macros/s/AKfycbw94t0im5wYfef_dobJtT0fr0aUUbXi6RtdXTlu8bKg2XDkIZYLqBxqiESjcsKWzeql/exec";
 
-        let guestName = guestParam || "ضيفنا الكريم";
+        let guestName = guestParam || "";
         let guestCount = 1;
 
-        // جلب البيانات من الشيت
         try {
           const res = await fetch(
             webAppUrl + "?guest=" + encodeURIComponent(guestParam)
           );
           const json = await res.json();
-          guestName = json.guest;
-          guestCount = Number(json.count) || 1; // العدد من الشيت
+          guestName = json.guest || "";
+          guestCount = Number(json.count) || 1;
         } catch (err) {
           console.warn(
             "لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي",
@@ -115,32 +117,48 @@
           ).catch((err) => console.error(err));
         }
 
-        // زر تأكيد الحضور
-        document.getElementById("confirmBtn").onclick = function () {
-          updateStatus(guestName, "confirmed");
-          inviteCard.style.display = "none";
-          barcodeSection.style.display = "block";
-          msg.innerText = "تم تأكيد حضورك 🎉";
-
+        function generateBarcodes(name, count) {
           container.innerHTML = "";
-          for (let i = 1; i <= guestCount; i++) {
+          for (let i = 1; i <= count; i++) {
             const div = document.createElement("div");
             container.appendChild(div);
             new QRCode(div, {
-              text: guestName + "-" + i,
+              text: name + "-" + i,
               width: 230,
               height: 230,
+              correctLevel: QRCode.CorrectLevel.L,
             });
           }
-        };
+        }
 
-        // زر الاعتذار
-        document.getElementById("declineBtn").onclick = function () {
-          updateStatus(guestName, "declined");
+        const savedStatus = localStorage.getItem("status_" + guestName);
+        if (savedStatus === "confirmed") {
           inviteCard.style.display = "none";
           barcodeSection.style.display = "block";
-          msg.innerText = "نأسف لعدم تمكنك من الحضور 🌸";
-          container.innerHTML = ""; // لا باركود
+          msg.innerText = "تم تأكيد حضورك ";
+          generateBarcodes(guestName, guestCount);
+        } else if (savedStatus === "declined") {
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "نأسف لعدم تمكنك من الحضور ";
+        }
+
+        document.getElementById("confirmBtn").onclick = function () {
+          updateStatus(guestName, "confirmed");
+          localStorage.setItem("status_" + guestName, "confirmed");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "تم تأكيد حضورك ";
+          generateBarcodes(guestName, guestCount);
+        };
+
+        document.getElementById("declineBtn").onclick = function () {
+          updateStatus(guestName, "declined");
+          localStorage.setItem("status_" + guestName, "declined");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "نأسف لعدم تمكنك من الحضور ";
+          container.innerHTML = "";
         };
       });
     </script>
