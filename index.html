@@ -153,7 +153,8 @@
           if (status === "confirmed") {
             inviteCard.style.display = "none";
             barcodeSection.style.display = "block";
-            msg.innerText = "تم تأكيد حضورك";
+            msg.innerText =
+              "باركود الدخول الخاص بك، فضلاً تأكد من حفظ الصورة في جهازك لإبرازها عند الدخول";
             generateBarcodes(guestID, guestCount);
           } else if (status === "declined") {
             inviteCard.style.display = "none";
@@ -172,7 +173,8 @@
           localStorage.setItem("status_" + guestName, "confirmed");
           inviteCard.style.display = "none";
           barcodeSection.style.display = "block";
-          msg.innerText = "تم تأكيد حضورك";
+          msg.innerText =
+            "باركود الدخول الخاص بك، فضلاً تأكد من حفظ الصورة في جهازك لإبرازها عند الدخول";
           generateBarcodes(guestID, guestCount);
         };
 
