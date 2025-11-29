@@ -140,17 +140,31 @@
           }
         }
 
-        const savedStatus = localStorage.getItem("status_" + guestName);
-        if (savedStatus === "confirmed") {
-          inviteCard.style.display = "none";
-          barcodeSection.style.display = "block";
-          msg.innerText = "تم تأكيد حضورك";
-          generateBarcodes(guestID, guestCount);
-        } else if (savedStatus === "declined") {
-          inviteCard.style.display = "none";
-          barcodeSection.style.display = "block";
-          msg.innerText = "نأسف لعدم تمكنك من الحضور";
-          container.innerHTML = "";
+        try {
+          const res = await fetch(
+            webAppUrl + "?guest=" + encodeURIComponent(guestParam)
+          );
+          const json = await res.json();
+          guestName = json.guest || guestName;
+          guestCount = Number(json.count) || 1;
+          guestID = json.id || guestParam;
+          const status = json.status || "";
+
+          if (status === "confirmed") {
+            inviteCard.style.display = "none";
+            barcodeSection.style.display = "block";
+            msg.innerText = "تم تأكيد حضورك";
+            generateBarcodes(guestID, guestCount);
+          } else if (status === "declined") {
+            inviteCard.style.display = "none";
+            barcodeSection.style.display = "block";
+            msg.innerText = "نأسف لعدم تمكنك من الحضور";
+          }
+        } catch (err) {
+          console.warn(
+            "لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي",
+            err
+          );
         }
 
         document.getElementById("confirmBtn").onclick = function () {
@@ -174,4 +188,3 @@
     </script>
   </body>
 </html>
-
