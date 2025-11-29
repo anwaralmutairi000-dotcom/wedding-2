@@ -34,17 +34,31 @@
         text-decoration: none;
         font-size: 16px;
       }
-      .confirm { background: #2f855a; }
-      .decline { background: #d9534f; }
+      .confirm {
+        background: #2f855a;
+      }
+      .decline {
+        background: #d9534f;
+      }
       #qrcode-container {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 25px;
         align-items: center;
         margin-top: 25px;
       }
-      #qrcode-container > div { width: 120px; height: 120px; }
+      #qrcode-container > div {
+        width: 120px;
+        height: 120px;
+      }
+      /* تصغير حجم النص بعد التأكيد */
+      #msg {
+        font-size: 14px; /* حجم أصغر للنص */
+        font-weight: bold; /* خط أخف */
+        margin-bottom: 15px; /* مسافة بسيطة عن الباركود */
+      }
     </style>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body>
@@ -56,8 +70,12 @@
       <p>📍 المكان: فندق ريجنسي</p>
       <p>عدد الدعوات: <span id="countSpan">-</span></p>
       <div class="buttons">
-        <a id="confirmBtn" class="btn confirm" href="javascript:void(0)">تأكيد</a>
-        <a id="declineBtn" class="btn decline" href="javascript:void(0)">اعتذار</a>
+        <a id="confirmBtn" class="btn confirm" href="javascript:void(0)"
+          >تأكيد</a
+        >
+        <a id="declineBtn" class="btn decline" href="javascript:void(0)"
+          >اعتذار</a
+        >
       </div>
     </div>
 
@@ -68,8 +86,10 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", async function () {
-        const guestParam = new URLSearchParams(window.location.search).get("guest") || "";
-        const webAppUrl = "https://script.google.com/macros/s/AKfycby9oNj_7cxZyXXEmR-W-npS8GUQDtveCowbLdMq0h8d9HwgKhDAuwoqb5fuLZBJ0sER/exec";
+        const guestParam =
+          new URLSearchParams(window.location.search).get("guest") || "";
+        const webAppUrl =
+          "https://script.google.com/macros/s/AKfycby9oNj_7cxZyXXEmR-W-npS8GUQDtveCowbLdMq0h8d9HwgKhDAuwoqb5fuLZBJ0sER/exec";
 
         let guestName = guestParam;
         let guestID = guestParam;
@@ -82,7 +102,9 @@
 
         async function fetchGuestData() {
           try {
-            const res = await fetch(webAppUrl + "?guest=" + encodeURIComponent(guestParam));
+            const res = await fetch(
+              webAppUrl + "?guest=" + encodeURIComponent(guestParam)
+            );
             const json = await res.json();
             guestName = json.guest || guestName;
             guestCount = parseInt(json.count, 10) || 1;
@@ -98,13 +120,18 @@
               showDecline();
             }
           } catch (err) {
-            console.warn("لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي", err);
+            console.warn(
+              "لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي",
+              err
+            );
           }
         }
 
         function updateStatus(guest, status) {
-          fetch(webAppUrl + `?guest=${encodeURIComponent(guest)}&status=${status}`, { method: "POST" })
-            .catch((err) => console.error(err));
+          fetch(
+            webAppUrl + `?guest=${encodeURIComponent(guest)}&status=${status}`,
+            { method: "POST" }
+          ).catch((err) => console.error(err));
         }
 
         function generateBarcodes(id, count) {
@@ -112,7 +139,12 @@
           for (let i = 1; i <= count; i++) {
             const div = document.createElement("div");
             container.appendChild(div);
-            new QRCode(div, { text: id + "-" + i, width: 120, height: 120, correctLevel: QRCode.CorrectLevel.L });
+            new QRCode(div, {
+              text: id + "-" + i,
+              width: 120,
+              height: 120,
+              correctLevel: QRCode.CorrectLevel.L,
+            });
             const label = document.createElement("span");
             label.textContent = i;
             label.style.marginTop = "6px";
@@ -125,7 +157,8 @@
         function showBarcode() {
           inviteCard.style.display = "none";
           barcodeSection.style.display = "block";
-          msg.innerText = "باركود الدخول الخاص بك، فضلاً تأكد من حفظ الصورة لإبرازها عند الدخول";
+          msg.innerText =
+            "باركود الدخول الخاص بك، فضلاً تأكد من حفظ الصورة لإبرازها عند الدخول";
           generateBarcodes(guestID, guestCount);
         }
 
@@ -153,4 +186,3 @@
     </script>
   </body>
 </html>
-
