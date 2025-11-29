@@ -43,21 +43,25 @@
       #qrcode-container {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 25px;
         align-items: center;
-        margin-top: 20px;
+        margin-top: 25px;
+      }
+      #qrcode-container > div {
+        width: 120px;
+        height: 120px;
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body>
     <div class="card" id="inviteCard">
-      <h2>مرحباً <span id="guestSpan">ضيفنا الكريم</span></h2>
+      <h2>مرحباً <span id="guestSpan"></span></h2>
       <p>نتشرف بدعوتكم لحضور حفل زفاف (اسم العريس) و (اسم العروس)</p>
       <p>🕗 الوقت: 8 PM</p>
       <p>📅 اليوم: الجمعة</p>
       <p>📍 المكان: فندق ريجنسي</p>
-      <p>عدد الدعوات: <span id="countSpan">1</span></p>
+      <p>عدد الدعوات: <span id="countSpan">-</span></p>
 
       <div class="buttons">
         <a id="confirmBtn" class="btn confirm" href="javascript:void(0)"
@@ -78,21 +82,22 @@
       document.addEventListener("DOMContentLoaded", async function () {
         const guestParam =
           new URLSearchParams(window.location.search).get("guest") || "";
-
         const webAppUrl =
-          "https://script.google.com/macros/s/AKfycbw94t0im5wYfef_dobJtT0fr0aUUbXi6RtdXTlu8bKg2XDkIZYLqBxqiESjcsKWzeql/exec";
+          "https://script.google.com/macros/s/AKfycbz9JFpr5ikzlPa5W1hrODoLKbgUOOiLXFtF6bP6-wogdWn_xIfPcs1MWo0o2S0ZzG-9/exec";
 
-        let guestName = guestParam || "ضيفنا الكريم";
+        let guestName = guestParam;
+        let guestID = guestParam;
         let guestCount = 1;
 
-        // جلب البيانات من الشيت
+        // جلب البيانات من Web App
         try {
           const res = await fetch(
             webAppUrl + "?guest=" + encodeURIComponent(guestParam)
           );
           const json = await res.json();
-          guestName = json.guest;
-          guestCount = Number(json.count) || 1; // العدد من الشيت
+          guestName = json.guest || guestName;
+          guestCount = parseInt(json.count, 10) || 1;
+          guestID = json.id || guestParam; // ID من Web App
         } catch (err) {
           console.warn(
             "لم يتم جلب البيانات من الشيت، سيتم استخدام الافتراضي",
@@ -115,34 +120,58 @@
           ).catch((err) => console.error(err));
         }
 
-        // زر تأكيد الحضور
-        document.getElementById("confirmBtn").onclick = function () {
-          updateStatus(guestName, "confirmed");
-          inviteCard.style.display = "none";
-          barcodeSection.style.display = "block";
-          msg.innerText = "تم تأكيد حضورك 🎉";
-
+        function generateBarcodes(id, count) {
           container.innerHTML = "";
-          for (let i = 1; i <= guestCount; i++) {
+          for (let i = 1; i <= count; i++) {
             const div = document.createElement("div");
             container.appendChild(div);
             new QRCode(div, {
-              text: guestName + "-" + i,
-              width: 230,
-              height: 230,
+              text: id + "-" + i, // <--- الباركود ID-رقم
+              width: 120,
+              height: 120,
+              correctLevel: QRCode.CorrectLevel.L,
             });
+            const label = document.createElement("span");
+            label.textContent = i; // الرقم
+            label.style.marginTop = "8px";
+            label.style.fontSize = "14px";
+            label.style.fontWeight = "bold";
+            div.appendChild(label);
           }
-        };
+        }
 
-        // زر الاعتذار
-        document.getElementById("declineBtn").onclick = function () {
-          updateStatus(guestName, "declined");
+        const savedStatus = localStorage.getItem("status_" + guestName);
+        if (savedStatus === "confirmed") {
           inviteCard.style.display = "none";
           barcodeSection.style.display = "block";
-          msg.innerText = "نأسف لعدم تمكنك من الحضور 🌸";
-          container.innerHTML = ""; // لا باركود
+          msg.innerText = "تم تأكيد حضورك";
+          generateBarcodes(guestID, guestCount);
+        } else if (savedStatus === "declined") {
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "نأسف لعدم تمكنك من الحضور";
+          container.innerHTML = "";
+        }
+
+        document.getElementById("confirmBtn").onclick = function () {
+          updateStatus(guestName, "confirmed");
+          localStorage.setItem("status_" + guestName, "confirmed");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "تم تأكيد حضورك";
+          generateBarcodes(guestID, guestCount);
+        };
+
+        document.getElementById("declineBtn").onclick = function () {
+          updateStatus(guestName, "declined");
+          localStorage.setItem("status_" + guestName, "declined");
+          inviteCard.style.display = "none";
+          barcodeSection.style.display = "block";
+          msg.innerText = "نأسف لعدم تمكنك من الحضور";
+          container.innerHTML = "";
         };
       });
     </script>
   </body>
 </html>
+
